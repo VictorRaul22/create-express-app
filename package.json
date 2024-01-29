@@ -1,0 +1,29 @@
+{
+  "name": "@victorraul22/create-express-app",
+  "version": "1.1.0",
+  "description": "Scaffold an express app",
+  "bin": {
+    "create-express-app": "./bin/index.js"
+  },
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "express",
+    "scaffold",
+    "generator"
+  ],
+  "standard": {
+    "ignore": [
+      "templates"
+    ]
+  },
+  "author": "Victor Chirinos",
+  "license": "MIT",
+  "dependencies": {
+    "cross-spawn": "^7.0.3",
+    "inquirer": "^8.2.6"
+  }
+}
