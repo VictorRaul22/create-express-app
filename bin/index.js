@@ -2,12 +2,12 @@
 const inquirer = require("inquirer");
 const fs = require("fs");
 const path = require("path");
-const { execSync } = require("child_process");
 const CURR_DIR = process.cwd();
 const NAME_REGEX = /^([A-Za-z\-\_\d])+$/;
 const { install } = require("./install");
 const { getPkgManager } = require("./get-pkg-manager");
 const { getOnline } = require("./is-online");
+const { installTemplate } = require("../templates/index");
 let ans;
 const questions = async () => {
   const QUESTIONS = [
@@ -25,7 +25,12 @@ const questions = async () => {
       name: "project-choice",
       type: "list",
       message: "What project template would you like to generate?",
-      choices: fs.readdirSync(path.join(__dirname, "..", "templates")),
+      choices: fs
+        .readdirSync(path.join(__dirname, "..", "templates"), {
+          withFileTypes: true,
+        })
+        .filter((d) => d.isDirectory())
+        .map((d) => d.name),
     },
   ];
 
@@ -36,53 +41,30 @@ async function main() {
   try {
     const answers = await questions();
     ans = answers;
+
     const projectChoice = answers["project-choice"];
     const projectName = answers["app-name"];
-    const templatePath = path.join(__dirname, "..", "templates", projectChoice);
     const pkgManage = getPkgManager();
     const isOnline = await getOnline();
-    fs.mkdirSync(`${CURR_DIR}/${projectName}`);
-    createDirectoryContents(templatePath, projectName);
-    console.log("Project setup complete!");
-    process.chdir(`${CURR_DIR}/${projectName}`);
+    console.log(`Using ${pkgManage}.`);
 
-    console.log("installing dependencies");
+    await installTemplate({
+      appName: projectName,
+
+      root: path.join(CURR_DIR, projectName),
+      template: projectChoice,
+    });
+
+    // fs.mkdirSync(`${CURR_DIR}/${projectName}`);
+    // createDirectoryContents(templatePath, projectName);
+    // console.log("Project setup complete!");
+    process.chdir(path.join(CURR_DIR, projectName));
+    console.log("\ninstalling dependencies\n");
     await install(pkgManage, isOnline);
-    console.log("The project is ready!");
+    console.log("\nThe project is ready!\n");
     console.log(`$ cd ${projectName}`);
-    console.log("$ npm run dev");
   } catch (error) {
     console.log(error);
   }
 }
 main();
-
-function createDirectoryContents(templatePath, newProjectPath) {
-  const filesToCreate = fs.readdirSync(templatePath);
-  filesToCreate.forEach((file) => {
-    const origFilePath = `${templatePath}/${file}`;
-    const stats = fs.statSync(origFilePath);
-    if (stats.isFile()) {
-      let contents = fs.readFileSync(origFilePath, "utf8");
-      let keys = contents.match(/%(.*?)%/g);
-      if (keys)
-        for (const rep of keys)
-          contents = replaceAll(contents, rep, ans[`${rep.slice(1, -1)}`]);
-      const writePath = `${CURR_DIR}/${newProjectPath}/${file}`;
-      fs.writeFileSync(writePath, contents, "utf8");
-    } else if (stats.isDirectory()) {
-      fs.mkdirSync(`${CURR_DIR}/${newProjectPath}/${file}`);
-      createDirectoryContents(`${templatePath}/${file}`, `${newProjectPath}/${file}`);
-    }
-  });
-}
-function replaceAll(message, search, replacement) {
-  return message.split(search).join(replacement);
-}
-function runCommand(command) {
-  try {
-  } catch (error) {
-    console.log(`Failed to execute ${command}`, error);
-    process.exit(-1);
-  }
-}
