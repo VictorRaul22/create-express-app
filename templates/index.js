@@ -9,6 +9,17 @@ const installTemplate = async ({ appName, root, template }) => {
   await copy(copySource, root, {
     parents: true,
     cwd: templatePath,
+    rename: (name) => {
+      switch (name) {
+        case "gitignore": {
+          return `.${name}`;
+        }
+
+        default: {
+          return name;
+        }
+      }
+    },
   });
   const packageJson = template === "express-mvc" ? packageJsonMVC : packageJsonCA;
   packageJson.name = appName;
